@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 import numpy as np
 
-from LayerBuilder import LayerBuilder
+from .LayerBuilder import LayerBuilder
 
 class Network(nn.Module):
     def __init__(self, layers, prunable=False, device="auto", 
