@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 import numpy as np
 
-from .Network import Network
-from .DataLogger import DataLogger
+from .network import Network
+from .data_logger import DataLogger
 
 class Model(object):
     """A class used to define and train a Neural Network.
