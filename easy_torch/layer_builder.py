@@ -22,6 +22,17 @@ class LayerBuilder(object):
     Methods:
         Build(input_shape: list) -> None
             Creates a list of torch nn.Module with respect to the parameters
+
+    >>> builder = LayerBuilder("Conv-256x3x1x1-ReLU-BatchNorm")
+    >>> print(builder.Build([None, 128, 16, 16]))
+        (
+            [None, 256, 16, 16], 
+            [
+                Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)), 
+                BatchNorm2d(256, eps=1e-05, momentum=0.1, 
+                            affine=True, track_running_stats=True), ReLU()
+            ]
+        )
     """
     def __init__(self, name: str) -> None:
         """
@@ -54,18 +65,7 @@ class LayerBuilder(object):
         Returns: 
             (list) the new shape of the data.
             (list) List of modules.
-
-        >>> builder = LayerBuilder("Conv-256x3x1x1-ReLU-BatchNorm")
-        >>> print(builder.Build([None, 128, 16, 16]))
-        >>> (
-                [None, 256, 16, 16], 
-                [
-                    Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)), 
-                    BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), ReLU()
-                ]
-            )
         """
-        #TODO Add example
         self.layer = []
         if self.parsed_name["type"] == "Dropout":
             self.layer.append(nn.Dropout(self.parsed_name["size"]))
