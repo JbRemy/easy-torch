@@ -65,8 +65,6 @@ class Monitor(object):
         self.count = 0
 
     def update_metrics(self, loss, output, target):
-        pred = output.argmax(dim=1, keepdim=True)
-        self.acc += pred.eq(target.view_as(pred)).sum().item()/pred.size(0)
         self.loss += loss.item()
         self.count += 1
 
