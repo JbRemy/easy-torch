@@ -34,11 +34,16 @@ class CallBack(object):
             jump (int): The number of iterations passed since last
                 iteration_end call. Should be batch_size.
             *args, **kwargs: The arguments for the action function.
+
+        Returns:
+            it_end_res, epoch_end_res:
+                Depending on the type of callbacks something may be returned.
+                otherwise both are Nones.
         """
         it_end_res = self.action("iteration_end", jump, *args, **kwargs)
         if self._iteration // self._its_per_epochs != self._epoch:
             self._epoch += 1
-            epoch_end_res = self.action("epoch_end", jump, *args, **kwargs)
+            epoch_end_res = self.action("epoch_end", 0, *args, **kwargs)
 
         else:
             epoch_end_res = None
@@ -47,5 +52,13 @@ class CallBack(object):
 
         return it_end_res, epoch_end_res
 
-    def action(self, event, jump, *args, **kwargs):
+    def action(self, event: str, jump: int, *args, **kwargs):
+        """The callback's action
+
+        Ars:
+            event (str): the type of envent.
+            jump (str): The number of iteration performed since last call to
+                action.
+            *args, **kwargs
+        """
         pass
