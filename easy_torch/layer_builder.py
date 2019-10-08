@@ -1,10 +1,8 @@
-
-from typing import List, Optional, Union, Tuple
+from typing import List, Tuple
 from copy import copy
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 import numpy as np
 
@@ -53,8 +51,7 @@ class LayerBuilder(object):
             None
         """
         self._ParseName(name)
-
-        return None
+        self.layer = []
 
     def Build(self, input_shape: List[int]) -> Tuple[List[int], List[nn.Module]]:
         """Creates a list of nn.Module
@@ -66,7 +63,6 @@ class LayerBuilder(object):
             (list) the new shape of the data.
             (list) List of modules.
         """
-        self.layer = []
         if self.parsed_name["type"] == "Dropout":
             self.layer.append(nn.Dropout(self.parsed_name["size"]))
 
@@ -112,23 +108,12 @@ class LayerBuilder(object):
         Returns:
             None
         """
-        self.parsed_name = {}
-        for i, value in enumerate(name.split("-")):
-            if i == 0:
-                self.parsed_name["type"] = value
-
-            elif i == 1:
-                self.parsed_name["kernel_size"] = [int(_) for _ in value.split("x")]
-
-            elif i == 2:
-                self.parsed_name["activation"] = value
-
-            elif i >= 3:
-                if "options" in self.parsed_name:
-                    self.parsed_name["options"].append(value)
-
-                else:
-                    self.parsed_name["options"] = [value]
+        dict_keys = ['type', 'kernel_size', 'activation']
+        name_until_options = name.split('-')[:3]
+        name_after_options = name.split('-')[3:]
+        self.parsed_name = {k: name_until_options[i] for i, k in enumerate(dict_keys)}
+        self.parsed_name['kernel_size'] = [int(v) for v in self.parsed_name['kernel_size'].split('x')]
+        self.parsed_name.update({'options': [v for v in name_after_options]})
 
     def _BuildConv(self, input_shape: int) -> Tuple[Tuple[List[int], nn.Module]]:
         """Builds a convolutional layer
