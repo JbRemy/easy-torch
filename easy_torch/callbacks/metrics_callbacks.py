@@ -4,7 +4,7 @@ import torch
 
 from .callback import CallBack
 
-class _MetricCallack(CallBack):
+class _MetricCallBack(CallBack):
     """A callback specially designed for metrics monitoring
 
     Metrics are averaged over a periode of iterations, defined in the __init__
@@ -95,7 +95,7 @@ class _MetricCallack(CallBack):
     def _update_metrics(self, *args, **kwargs):
         pass
 
-class AccCallBack(_CallBack):
+class AccCallBack(_MetricCallBack):
     """Callbacks that returns accuracy averaged over periodes of iterations
     """
     def _update_metrics(self, pred: torch.FloatTensor, 
@@ -110,7 +110,7 @@ class AccCallBack(_CallBack):
         pred = output.argmax(dim=1, keepdim=True)
         self.metric += pred.eq(target.view_as(pred)).sum().item()
 
-class LossCallBack(_CallBack):
+class LossCallBack(_MetricCallBack):
     """Callbacks that returns loss averaged over periodes of iterations
     """
     REQUIRED_ARGS = ["loss"]
