@@ -40,19 +40,18 @@ class CallBack(object):
                 Depending on the type of callbacks something may be returned.
                 otherwise both are Nones.
         """
-        it_end_res = self.action("iteration_end", jump, *args, **kwargs)
+        self._iteration += jump
+        it_end_res = self._action("iteration_end", jump, *args, **kwargs)
         if self._iteration // self._its_per_epochs != self._epoch:
             self._epoch += 1
-            epoch_end_res = self.action("epoch_end", 0, *args, **kwargs)
+            epoch_end_res = self._action("epoch_end", 0, *args, **kwargs)
 
         else:
             epoch_end_res = None
 
-        self._iteration += jump
-
         return it_end_res, epoch_end_res
 
-    def action(self, event: str, jump: int, *args, **kwargs):
+    def _action(self, event: str, jump: int, *args, **kwargs):
         """The callback's action
 
         Ars:

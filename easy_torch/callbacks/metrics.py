@@ -40,7 +40,7 @@ class _MetricCallBack(CallBack):
         self._iteration = 0
         self._return_rule = return_rule
 
-    def action(self, event: str, jump: int, 
+    def _action(self, event: str, jump: int, 
                *args, **kwargs) -> Union[float, None]:
         """Updates the current metric and returns it if the return_rule is
         fullfilled.
