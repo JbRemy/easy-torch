@@ -9,7 +9,8 @@ import torch.nn.functional as F
 
 import numpy as np
 
-from layer_builder import LayerBuilder
+from .layer_builder import LayerBuilder
+from .helpers.torch import get_device
 
 # TODO evaluate the interest of haveing a function initializing weights.
 # Otherwise find a way to choose weights initialization
@@ -82,8 +83,8 @@ class Network(nn.Sequential):
         Returns:
             None
         """
-        self._GetDevice(device)
-        layers_modules = self._BuildLayers(layers, copy(input_shape))
+        self.device = get_device(device)
+        layers_modules = self._build_layers(layers, copy(input_shape))
         super(Network, self).__init__(*layers_modules)
         self._skip = skip
         if skip:
@@ -119,7 +120,7 @@ class Network(nn.Sequential):
 
         return out
 
-    def _BuildLayers(self, layers: List[Union["str", List]], 
+    def _build_layers(self, layers: List[Union["str", List]], 
                     input_shape: List[Union[None, int]]) -> List[nn.Module]:
         """Builds the layers of the network
 
@@ -141,33 +142,11 @@ class Network(nn.Sequential):
                 self._shape = temp._shape
 
             else:
-                builder = LayerBuilder(layer_name)
-                self._shape, layer = builder.Build(self._shape)
+                builder = _build_layers(layer_name)
+                self._shape, layer = builder.build(self._shape)
                 Layers += layer
 
         return Layers
-
-    def _GetDevice(self, device: Union[str, torch.device]) -> None:
-        """Define the device of the network
-
-        Args:
-            device (str)
-
-        Return: 
-            None
-        """
-        if device == "auto" and torch.cuda.is_available():
-            self.device = torch.device("gpu")
-
-        elif device == "auto" or device == "cpu":
-            self.device = torch.device("cpu")
-
-        elif device == "gpu":
-            assert torch.cuda.is_available(), "Cude not available"
-            self.device = torch.device("gpu")
-
-        elif isinstance(device, torch.device):
-            self.device = device
 
 if __name__ == "__main__":
     architechture = ["Conv-64-ReLU", "Conv-128-ReLU", "Linear-10"]

@@ -18,11 +18,11 @@ class LayerBuilder(object):
             the layer. For more details see LayerBuild._ParseName()
 
     Methods:
-        Build(input_shape: list) -> None
+        build(input_shape: list) -> None
             Creates a list of torch nn.Module with respect to the parameters
 
     >>> builder = LayerBuilder("Conv-256x3x1x1-ReLU-BatchNorm")
-    >>> print(builder.Build([None, 128, 16, 16]))
+    >>> print(builder.build([None, 128, 16, 16]))
         (
             [None, 256, 16, 16], 
             [
@@ -53,7 +53,7 @@ class LayerBuilder(object):
         self._ParseName(name)
         self.layer = []
 
-    def Build(self, input_shape: List[int]) -> Tuple[List[int], List[nn.Module]]:
+    def build(self, input_shape: List[int]) -> Tuple[List[int], List[nn.Module]]:
         """Creates a list of nn.Module
 
         Args:

@@ -1,10 +1,10 @@
 
 from typing import List, Optional, Union
 
-from .callback import CallBack
+from ._callback import _CallBack
 from torch import nn
 
-class _Scheduler(Callback):
+class _Scheduler(_Callback):
     """A super class of schedulers for optimizer hyperparameters.
     """
     def __init__(self, optimizer: nn.optim.optimizer, 

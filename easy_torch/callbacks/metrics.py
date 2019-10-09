@@ -2,9 +2,9 @@
 from typing import List, Optional, Union
 import torch
 
-from .callback import CallBack
+from ._callback import _CallBack
 
-class _MetricCallBack(CallBack):
+class _MetricCallBack(_CallBack):
     """A callback specially designed for metrics monitoring
 
     Metrics are averaged over a periode of iterations, defined in the __init__

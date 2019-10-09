@@ -2,7 +2,7 @@
 from typing import List, Optional, Union
 import torch
 
-class CallBack(object):
+class _CallBack(object):
     """A CallBack is called every time an iteration ends, it can monitor
     metrics or modify parameters of the network.
 
@@ -61,3 +61,4 @@ class CallBack(object):
             *args, **kwargs
         """
         pass
+
