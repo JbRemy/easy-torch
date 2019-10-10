@@ -7,34 +7,36 @@ from ._callback import _CallBack
 class _MetricCallBack(_CallBack):
     """A callback specially designed for metrics monitoring
 
-    Metrics are averaged over a periode of iterations, defined in the __init__
-    Then the average value is returned every periode.
+    metrics are averaged over a periode of iterations, defined in the __init__
+    then the average value is returned every periode.
 
-    Constants:
-        REQUIRED_ARGS: The list of arguments needed to compute the metric.
+    constants:
+        required_args: the list of arguments needed to compute the metric.
+        CALL_AT (str): when to call the callback
 
-    Methods:
-        __init__(self, return_rule: List[int, str], 
-                 its_per_epochs: int) -> None:
-            Initialises the Metric
+    methods:
+        __init__(self, return_rule: list[int, str], 
+                 its_per_epochs: int) -> none:
+            initialises the metric
         action(self, event: str, jump: int, 
-               *args, **kwargs) -> Union[float, None]:
-            Updates the current metric and returns it if the return_rule is
+               *args, **kwargs) -> union[float, none]:
+            updates the current metric and returns it if the return_rule is
             fullfilled.
+        testify(cls):
+            returns another class that require test metrics.
     """
+    CALL_AT = "train"
     REQUIRED_ARGS = []
     def __init__(self, return_rule: List[int, str], 
-                 its_per_epochs: int) -> None:
+                 *args, **kwargs) -> None:
         """Initialises the Metric
 
         Args:
             return_rule (int, str): If int, is interpreted as the sampling
                 frequency. If str as to be in ["iteration_end", "epoch_end"].
-            its_per_epochs (int): number of iterations (in individuals) per
-                epochs. Equivalent to the number of elements in the training
-                set.
+            *args, **kwargs: see Callback.__init__
         """
-        super(_MetricCallack, self).__init__(its_per_epochs)
+        super(_MetricCallack, self).__init__(*args, **kwargs)
         self._metric = 0
         self._count = 0
         self._iteration = 0
@@ -49,7 +51,7 @@ class _MetricCallBack(_CallBack):
             event (str): the type of envent.
             jump (str): The number of iteration performed since last call to
                 action.
-            *args, **kwargs: The args needed to compute the metric
+            *args, **kwargs: The args needed to compute the metric REQUIRED_ARGS
 
         Returns:
             metric (float): If required returns the averaged metric, else None
@@ -95,10 +97,38 @@ class _MetricCallBack(_CallBack):
     def _update_metrics(self, *args, **kwargs):
         pass
 
-class AccCallBack(_MetricCallBack):
+    # TODO @Simon: What do you thnik ? Is this the proper way do do it ?
+    # Also does it work for the subclasses of this meta class
+    @classmethod
+    def testify(cls):
+        """Returns another class that produces the test metric
+        """
+        class TestClass(cls):
+            """A test version of %(class_name)s.
+
+            The difference with the parent class is that the REQUIRED_ARGS are
+            tests version of those args, and the return rule becaomes
+            "epoch_end".
+
+            see: %(class_name)s
+            """ 
+            def __init__(self, *args, **kwargs):
+                super(TestClass).__init__(*args, **kwargs)
+                self._return_rule = "epoch_end"
+
+        TestClass.REQUIRED_ARGS = ["_test_%s" % _ for _ in cls.REQUIRED_ARGS]
+        TestClass.CALL_AT = "test"
+        TestClass.__name__ = "Test%s" % cls.__name__
+        TestClass.__doc__ %= {"class_name": cls.__name__}
+
+        return TestClass
+
+
+class Acc(_MetricCallBack):
     """Callbacks that returns accuracy averaged over periodes of iterations
     """
-    def _update_metrics(self, pred: torch.FloatTensor, 
+    REQUIRED_ARGS = ["_output", "_target"]
+    def _update_metrics(self, output: torch.FloatTensor, 
                         target: torch.IntTensor) -> None:
         """Updates acc value
 
@@ -110,10 +140,12 @@ class AccCallBack(_MetricCallBack):
         pred = output.argmax(dim=1, keepdim=True)
         self.metric += pred.eq(target.view_as(pred)).sum().item()
 
-class LossCallBack(_MetricCallBack):
+TestAcc = Acc.testify()
+
+class Loss(_MetricCallBack):
     """Callbacks that returns loss averaged over periodes of iterations
     """
-    REQUIRED_ARGS = ["loss"]
+    REQUIRED_ARGS = ["_loss"]
     def _update_metrics(self, loss: float) -> None:
         """updates the loss
 
@@ -125,4 +157,5 @@ class LossCallBack(_MetricCallBack):
         # losses
         self.metric += loss
 
+TestLoss = Loss.testify()
 

@@ -6,6 +6,9 @@ class _CallBack(object):
     """A CallBack is called every time an iteration ends, it can monitor
     metrics or modify parameters of the network.
 
+    Constants:
+        CALL_AT (str): When to call the callback
+
     Methods:
         iteration_end(self, jump: int, *args, **kwargs) -> Union[Tuple, None]:
             When an iteration ends, some action is to be performed by the
@@ -14,6 +17,7 @@ class _CallBack(object):
         action(self, event, jump, *args, **kwargs):
             The action to perform, depends on the child class.
     """
+    CALL_AT = ""
     def __init__(self, its_per_epochs: int) -> None:
         """Initilises the class
 

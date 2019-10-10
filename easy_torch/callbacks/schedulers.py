@@ -4,9 +4,17 @@ from typing import List, Optional, Union
 from ._callback import _CallBack
 from torch import nn
 
+# TODO: Documentation
+
 class _Scheduler(_Callback):
     """A super class of schedulers for optimizer hyperparameters.
+
+    constants:
+        CALL_AT (str): when to call the callback
+
+
     """
+    CALL_AT = "train"
     def __init__(self, optimizer: nn.optim.optimizer, 
                  *args, **kwargs) -> None:
         """Initializes the scheduler

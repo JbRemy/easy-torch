@@ -1,4 +1,6 @@
 
+from typing import List
+
 import torch
 import numpy as np
 
@@ -30,3 +32,15 @@ def _set_seed(seed: int) -> None:
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
         np.random.seed(seed)
+
+def send_to(tensors: List[torch.tensor], device: torch.device) -> List[torch.tensor]:
+    """Sends tensors to the device
+    
+    Args:
+        tensors (List)
+        device (torch.device)
+    
+    return:
+        tensors to device (list)
+    """
+    return [tesnor.to(device) for tensor in tensors]
