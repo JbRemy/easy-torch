@@ -13,6 +13,7 @@ import numpy as np
 from .network import Network
 from .callbacks import schedulers, _callback
 from .helpers.torch import get_device, set_seed, send_to
+from .helpers.general import save_json
 
 # TODO: We need to define the syntax for network definition somewhere.
 # TODO: Probably define a more proper way to store the metrics
@@ -158,10 +159,34 @@ class Model(object):
                 pbar.update(batch_size)
                 pbar.set_postfix(self._current_infos)
 
-                if self._check_terminate():
-                    return None
+                if selt._check_save():
+                    self.save(log_foler)
 
-        return None
+                if self._check_terminate():
+                    return None # TODO @Simon: Is this the correct way to kill the function ?
+
+    def save(self, folder: Optional[str]=None, 
+             fname: Optional[str]=None) -> None:
+        """Saves the model with the record.
+
+        This saves all public attributes + the dict and optimizer state dicts.
+        This allows to reload the model when needed.
+
+        Args:
+            folder (str): The directory where to save
+            fname (str): The prefix for every file inside the folder.
+                If None fname is the callback that triggered the SAVE order.
+        """
+        to_save = {}
+        for attr in [attr for attr in dir(self) if not attr.startswith('_')]:
+            to_save.update({attr: getattr(self, attr)})
+
+        to_save.update({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict()
+        })
+        save_json(os.path.join(folder, fname))
+
 
     def _test(self, loader) -> None:
         """One pass on the test dataset
@@ -208,6 +233,7 @@ class Model(object):
 
             self._current_info.update({name: res_})
 
+
     def _initialize_weights_and_optimizer(self, input_shape: Sequence[int]) -> None:
         """Builds the Network, initializes it's weights, and creates the
         optimizer.
@@ -253,6 +279,17 @@ class Model(object):
         """
         return "KILL" in self._current_info.values()
 
+    def _check_save(self) -> bool:
+        # TODO @Simon: you can't save if you didnt specify a log_folder, but
+        # nothing prevents it now, should we hard code it here. Like:
+        #   return "SAVE" in self._current_info.values() and log_folder
+        # Or add a test in the begining of train ?
+        """Cheks if a SAVE order as been given
+
+        Return:
+            (bool)
+        """
+        return "SAVE" in self._current_info.values()
 
 
 
