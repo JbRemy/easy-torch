@@ -17,6 +17,8 @@ from .helpers.general import save_json
 
 # TODO: We need to define the syntax for network definition somewhere.
 # TODO: Probably define a more proper way to store the metrics
+# TODO: change criteron for criterion
+# TODO: save callbacks
 
 class Model(object):
     """The overlord class to manage and train neural networks.
@@ -60,6 +62,7 @@ class Model(object):
         self.device = get_device(device)
         self.initialization_seed = seed if seed else np.random.randint()
         self.criteron = None
+        self.criteron_kwargs = None
         self.optimizer_name = None
         self.optimizer_kwargs = None
         self.training_seed = None
@@ -109,7 +112,9 @@ class Model(object):
             optimizer_kwargs (dict): arguments for said optimizer.
             criteron_kwargs (dict): arguments for said criteron.
         """
-        self.criteron = getattr(nn, criteron)(**criteron_kwargs)
+        self.criteron = criteron
+        self.criteron_kwargs = criteron_kwargs
+        self._criteron = getattr(nn, criteron)(**criteron_kwargs)
         self.optimizer_name = optimizer
         self.optimizer_kwargs = optimizer_kwargs
 
@@ -184,7 +189,7 @@ class Model(object):
         fname = fname if fname else\
                 "".join([k for k,v in self._current_info.items() if v=="SAVE" ])
         to_save.update({
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': model._network.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         })
         save_json(os.path.join(folder, fname))

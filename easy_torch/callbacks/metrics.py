@@ -4,6 +4,9 @@ import torch
 
 from ._callback import _CallBack
 
+
+# TODO: Add multiclass, weighted metrics
+
 class _MetricCallBack(_CallBack):
     """A callback specially designed for metrics monitoring
 
