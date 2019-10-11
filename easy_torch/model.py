@@ -181,6 +181,8 @@ class Model(object):
         for attr in [attr for attr in dir(self) if not attr.startswith('_')]:
             to_save.update({attr: getattr(self, attr)})
 
+        fname = fname if fname else\
+                "".join([k for k,v in self._current_info.items() if v=="SAVE" ])
         to_save.update({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
