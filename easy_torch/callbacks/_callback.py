@@ -8,6 +8,8 @@ class _CallBack(object):
 
     Constants:
         CALL_AT (str): When to call the callback
+        REQUIRED_ARGS (list): A list of arguments required to call .action().
+            Those arguments must be attributes of the model.
 
     Methods:
         iteration_end(self, jump: int, *args, **kwargs) -> Union[Tuple, None]:
@@ -18,6 +20,7 @@ class _CallBack(object):
             The action to perform, depends on the child class.
     """
     CALL_AT = ""
+    REQUIRED_ARGS = []
     def __init__(self, its_per_epochs: int) -> None:
         """Initilises the class
 
@@ -65,4 +68,5 @@ class _CallBack(object):
             *args, **kwargs
         """
         pass
+
 

@@ -62,6 +62,7 @@ class Model(object):
         self.optimizer_name = None
         self.optimizer_kwargs = None
         self.training_seed = None
+        self.record = {}
         # TODO @Simon: Properly manage warnings ? 
         if seed and self.device == torch.device("cuda"):
             if not torch.backends.cudnn.deterministic or torch.backends.cudnn.benchmark:
@@ -76,6 +77,18 @@ class Model(object):
                     Warning
                 )
 
+        self._optimizer = None
+        self._current_info = {}
+        self._train_data = None
+        self._train_target = None
+        self._train_output = None
+        self._train_loss = None
+        self._test_data = None
+        self._test_target = None
+        self._test_output = None
+        self._test_loss = None
+        self._test_callbacks = None
+        self._train_callbacks = None
 
     def compile(self, optimizer: str, criteron: str, 
                 optimizer_kwargs: Optional[dict]=None, 
@@ -126,19 +139,29 @@ class Model(object):
         """
         self._initialize_weights_and_optimizer(train_loader_SHAPE) # TODO train_loader_SHAPE
         self._initialize_callbacks(callbacks)
-        self.record = {}
 
         for epoch in epochs:
+            _pbar = self._initialize_pbar(epoch, epochs)
             for i, (data, target) in enumerate(train_loader):
                 if i & test_freq == 0:
-                    self._test(test_loader):
+                    self._test(test_loader)
 
                 jump = data.size(0)
                 self._data, self._target = send_to([data, target], self.device)
                 self._train_data, self._train_target = send_to([test_data, test_target], self.device)
                 self._train_output = self.network(self._train_data)
                 self._train_loss = criteron(self._train_output, self._train_target)
+                self._train_loss.backward()
+                self._optimizer.step()
                 self._call_callbacks("train", jump)
+
+                pbar.update(batch_size)
+                pbar.set_postfix(self._current_infos)
+
+                if self._check_terminate():
+                    return None
+
+        return None
 
     def _test(self, loader) -> None:
         """One pass on the test dataset
@@ -166,6 +189,8 @@ class Model(object):
     def _store_res(self, name: str, res: Sequence):
         """Stores results in self.record if needed, at the iteration address
 
+        Also updates the _current_info dict, storing current values of metrics.
+
         Args:
             name (str): the name of the result
             res (iterable): the metrics to store
@@ -181,6 +206,8 @@ class Model(object):
                     self.record[name] = {}
                     self.record[name][iterations] = res_
 
+            self._current_info.update({name: res_})
+
     def _initialize_weights_and_optimizer(self, input_shape: Sequence[int]) -> None:
         """Builds the Network, initializes it's weights, and creates the
         optimizer.
@@ -195,24 +222,36 @@ class Model(object):
             **self.optimizer_kwargs
         )
 
-    def _initialize_callbacks(self, callbacks) -> None:
+    def _initialize_callbacks(self, callbacks: List[_CallBack]) -> None:
         """Build all the required callbacks
 
         Args:
             callbacks: Optional[list[Union[str, _callback._CallBack]]]
         """
-        self._test_callbacks = [callback in callbacks if callback.CALL_AT == "test"] 
-        self._train_callbacks = [callback in callbacks if callback.CALL_AT == "train"] 
+        self._test_callbacks = [callback for callback in callbacks if callback.CALL_AT=="test"] 
+        self._train_callbacks = [callback for callback in callbacks if callback.CALL_AT=="train"] 
 
-    with tqdm(total=len(train_loader)*train_loader.batch_size, unit_scale=True,
-              desc="Epoch %i/%i" % (epoch+1, epochs),
-              postfix={"train_acc": 0.0, "test_acc": 0.0}) as pbar:
+    def _initialize_pbar(self, epoch: int, epochs: int) -> tqdm:
+        """Initializes a progress bar for the current epoch
 
-    pbar.update(data.size(0))
-    pbar.set_postfix({"train_acc": self._logger.train_acc,
-                      "test_acc": self._logger.test_acc})
+        Args:
+            epoch (int): current epoch
+            epochs (int): total number of epochs.
 
+        Returns:
+            the progess bar (tqdm.tqdm)
+        """
+        return tqdm(total=its_per_epochs, unit_scale=True,
+                    desc="Epoch %i/%i" % (epoch+1, epochs),
+                    postfix={})
 
+    def _check_terminate(self) -> bool:
+        """Cheks if a KILL order as been given
+
+        Return:
+            (bool)
+        """
+        return "KILL" in self._current_info.values()
 
 
 
