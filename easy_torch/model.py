@@ -17,7 +17,6 @@ from .helpers.general import save_json
 
 # TODO: We need to define the syntax for network definition somewhere.
 # TODO: Probably define a more proper way to store the metrics
-# TODO: change criteron for criterion
 # TODO: save callbacks
 
 class Model(object):
@@ -29,7 +28,7 @@ class Model(object):
     Attributes:
         layers (list): A list of layers following the correct syntax.
         device (torch.device)
-        criteron (str)
+        criterion (str)
         optimizer_name (str)
         optimizer_kwargs (dict)
         training_seed (int)
@@ -38,9 +37,9 @@ class Model(object):
         __init__(self, layers: List[str], device: str="auto", 
                  seed: Optional[int]=None) -> None:
            Defines architectural parameters of the network.
-        compile(self, optimizer: str, criteron: str, 
+        compile(self, optimizer: str, criterion: str, 
                 optimizer_kwargs: Optional[dict]=None, 
-                criteron_kwargs: Optional[dict]=None) -> None:
+                criterion_kwargs: Optional[dict]=None) -> None:
             Defines the training aspects of the model.
 
     """
@@ -61,8 +60,8 @@ class Model(object):
         self.layers = layers
         self.device = get_device(device)
         self.initialization_seed = seed if seed else np.random.randint()
-        self.criteron = None
-        self.criteron_kwargs = None
+        self.criterion = None
+        self.criterion_kwargs = None
         self.optimizer_name = None
         self.optimizer_kwargs = None
         self.training_seed = None
@@ -94,27 +93,27 @@ class Model(object):
         self._test_callbacks = None
         self._train_callbacks = None
 
-    def compile(self, optimizer: str, criteron: str, 
+    def compile(self, optimizer: str, criterion: str, 
                 optimizer_kwargs: Optional[dict]=None, 
-                criteron_kwargs: Optional[dict]=None) -> None:
+                criterion_kwargs: Optional[dict]=None) -> None:
         """Defines the training aspects of the model.
 
         Once a model is compiled, we know what architecture to train on which
-        criteron with which algorithm.
+        criterion with which algorithm.
         The optimizer is not instanciated at this point becaus we need the
         network parameters to be initialized.
 
         Args:
             optimizer (str): The name of a torch.optim.optimizer.
                 https://pytorch.org/docs/stable/optim.html
-            criteron (str): The name of a troch.nn Loss function.
+            criterion (str): The name of a troch.nn Loss function.
                 https://pytorch.org/docs/stable/nn.html
             optimizer_kwargs (dict): arguments for said optimizer.
-            criteron_kwargs (dict): arguments for said criteron.
+            criterion_kwargs (dict): arguments for said criterion.
         """
-        self.criteron = criteron
-        self.criteron_kwargs = criteron_kwargs
-        self._criteron = getattr(nn, criteron)(**criteron_kwargs)
+        self.criterion = criterion
+        self.criterion_kwargs = criterion_kwargs
+        self._criterion = getattr(nn, criterion)(**criterion_kwargs)
         self.optimizer_name = optimizer
         self.optimizer_kwargs = optimizer_kwargs
 
@@ -156,7 +155,7 @@ class Model(object):
                 self._data, self._target = send_to([data, target], self.device)
                 self._train_data, self._train_target = send_to([test_data, test_target], self.device)
                 self._train_output = self.network(self._train_data)
-                self._train_loss = criteron(self._train_output, self._train_target)
+                self._train_loss = criterion(self._train_output, self._train_target)
                 self._train_loss.backward()
                 self._optimizer.step()
                 self._call_callbacks("train", jump)
@@ -205,7 +204,7 @@ class Model(object):
             test_jump = data.size(0)
             self._test_data, self._test_target = send_to([test_data, test_target], self.device)
             self._test_output = self.network(self._test_data)
-            self._test_loss = criteron(self._test_output, self._test_target)
+            self._test_loss = criterion(self._test_output, self._test_target)
             self._call_callbacks("test", test_jump)
 
     def _call_callbacks(self, time: "str"):
