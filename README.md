@@ -1,4 +1,4 @@
-<center><span style="color:red">**Work in progress**</span></center>
+<p align="center"><span style="color:red">__Work in progress__</span></p>
 
 # easy-torch
 
