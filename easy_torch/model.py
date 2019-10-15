@@ -13,7 +13,7 @@ import numpy as np
 from .network import Network
 from .callbacks import schedulers, _callback
 from .helpers.torch import get_device, set_seed, send_to
-from .helpers.general import save_json
+from .helpers.general import save_json, exists_or_create_dir
 
 # TODO: We need to define the syntax for network definition somewhere.
 # TODO: Probably define a more proper way to store the metrics
@@ -66,6 +66,7 @@ class Model(object):
         self.optimizer_kwargs = None
         self.training_seed = None
         self.record = {}
+        self.iteration = 0
         # TODO @Simon: Properly manage warnings ? 
         if seed and self.device == torch.device("cuda"):
             if not torch.backends.cudnn.deterministic or torch.backends.cudnn.benchmark:
@@ -148,7 +149,7 @@ class Model(object):
         for epoch in epochs:
             _pbar = self._initialize_pbar(epoch, epochs)
             for i, (data, target) in enumerate(train_loader):
-                if i & test_freq == 0:
+                if self._check_crossed(self, test_freq, jump):
                     self._test(test_loader)
 
                 jump = data.size(0)
@@ -163,11 +164,13 @@ class Model(object):
                 pbar.update(batch_size)
                 pbar.set_postfix(self._current_infos)
 
-                if selt._check_save():
+                if self._check_save() or self._check_crossed(self, log_freq, jump):
                     self.save(log_foler)
 
                 if self._check_terminate():
                     return None # TODO @Simon: Is this the correct way to kill the function ?
+
+                self.iteration += jump
 
     def save(self, folder: Optional[str]=None, 
              fname: Optional[str]=None) -> None:
@@ -181,12 +184,14 @@ class Model(object):
             fname (str): The prefix for every file inside the folder.
                 If None fname is the callback that triggered the SAVE order.
         """
+        exists_or_create_dir(folder)
         to_save = {}
         for attr in [attr for attr in dir(self) if not attr.startswith('_')]:
             to_save.update({attr: getattr(self, attr)})
 
         fname = fname if fname else\
                 "".join([k for k,v in self._current_info.items() if v=="SAVE" ])
+        fnmae += "_%i.pt" % self.iteration
         to_save.update({
             'model_state_dict': model._network.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
@@ -254,14 +259,15 @@ class Model(object):
             **self.optimizer_kwargs
         )
 
-    def _initialize_callbacks(self, callbacks: List[_CallBack]) -> None:
+    def _initialize_callbacks(self, callbacks: Optional[List[_CallBack]]=None) -> None:
         """Build all the required callbacks
 
         Args:
             callbacks: Optional[list[Union[str, _callback._CallBack]]]
         """
-        self._test_callbacks = [callback for callback in callbacks if callback.CALL_AT=="test"] 
-        self._train_callbacks = [callback for callback in callbacks if callback.CALL_AT=="train"] 
+        if callback:
+            self._test_callbacks = [callback for callback in callbacks if callback.CALL_AT=="test"] 
+            self._train_callbacks = [callback for callback in callbacks if callback.CALL_AT=="train"] 
 
     def _initialize_pbar(self, epoch: int, epochs: int) -> tqdm:
         """Initializes a progress bar for the current epoch
@@ -296,6 +302,18 @@ class Model(object):
             (bool)
         """
         return "SAVE" in self._current_info.values()
+
+    def _check_crossed(self, freq: int, jump: int) -> bool:
+        """Checks if iterations just cross a frequency point
+        
+        Args:
+            freq (int)
+            jump (int): The update before last check
+
+        Return: 
+            (bool)
+        """
+        return self.iteration // freq > (self.iteration-jump) // freq 
 
 
 
