@@ -108,7 +108,7 @@ class Network(nn.Sequential):
         Return:
             (torch.Tensor): The output of the network.
         """
-        out = self.__class__.forward(self, x)
+        out = super(Network, self).forward(x)
         if self._skip:
             if self._skip_conv:
                 skip = self._skip_conv(x)
@@ -142,7 +142,7 @@ class Network(nn.Sequential):
                 self._shape = temp._shape
 
             else:
-                builder = _build_layers(layer_name)
+                builder = LayerBuilder(layer_name)
                 self._shape, layer = builder.build(self._shape)
                 Layers += layer
 

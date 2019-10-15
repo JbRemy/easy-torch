@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, Sequence
+from typing import List, Optional, Union, Sequence, Tuple
 
 import os
 from copy import copy
@@ -58,7 +58,7 @@ class Model(object):
             seed (int): The seed for initialisation of the parameters.
         """
         self.layers = layers
-        self.device = get_device(device)
+        self.device = device
         self.initialization_seed = seed if seed else np.random.randint()
         self.criterion = None
         self.criterion_kwargs = None
@@ -68,7 +68,7 @@ class Model(object):
         self.record = {}
         self.iteration = 0
         # TODO @Simon: Properly manage warnings ? 
-        if seed and self.device == torch.device("cuda"):
+        if seed and self.device == "cuda":
             if not torch.backends.cudnn.deterministic or torch.backends.cudnn.benchmark:
                 warnings.warn(
                     """
@@ -81,12 +81,13 @@ class Model(object):
                     Warning
                 )
 
+        self._device = get_device(device)
         self._optimizer = None
         self._current_info = {}
-        self._train_data = None
-        self._train_target = None
-        self._train_output = None
-        self._train_loss = None
+        self._data = None
+        self._target = None
+        self._output = None
+        self._loss = None
         self._test_data = None
         self._test_target = None
         self._test_output = None
@@ -143,33 +144,31 @@ class Model(object):
             callbacks (list): A list of callbacks to apply, already
                 instanciated.
         """
-        for i, (data, target) in enumerate(train_loader):
-            size = tuple(data.size)
-            break
+        size, its_per_epochs = self._get_size_and_its_per_epochs(train_loader)
 
         self._initialize_weights_and_optimizer(size) # TODO train_loader_SHAPE
         self._initialize_callbacks(callbacks)
 
-        for epoch in epochs:
-            _pbar = self._initialize_pbar(epoch, epochs)
+        for epoch in range(epochs):
+            _pbar = self._initialize_pbar(epoch, epochs, its_per_epochs)
             for i, (data, target) in enumerate(train_loader):
-                if self._check_crossed(self, test_freq, jump):
+                jump = data.size(0)
+                if self._check_crossed(test_freq, jump):
                     self._test(test_loader)
 
-                jump = data.size(0)
-                self._data, self._target = send_to([data, target], self.device)
-                self._train_data, self._train_target = send_to([test_data, test_target], self.device)
-                self._train_output = self.network(self._train_data)
-                self._train_loss = criterion(self._train_output, self._train_target)
-                self._train_loss.backward()
+                self._data, self._target = send_to([data, target], self._device)
+                self._output = self._network(self._data)
+                self._loss = self._criterion(self._output, self._target)
+                self._optimizer.zero_grad()
+                self._loss.backward()
                 self._optimizer.step()
                 self._call_callbacks("train", jump)
 
-                pbar.update(batch_size)
-                pbar.set_postfix(self._current_infos)
+                _pbar.update(jump)
+                _pbar.set_postfix(self._current_info)
 
-                if self._check_save() or self._check_crossed(self, log_freq, jump):
-                    self.save(log_foler)
+                if self._check_save() or self._check_crossed(log_freq, jump):
+                    self.save(log_folder)
 
                 if self._check_terminate():
                     return None # TODO @Simon: Is this the correct way to kill the function ?
@@ -190,18 +189,17 @@ class Model(object):
         """
         exists_or_create_dir(folder)
         to_save = {}
-        for attr in [attr for attr in dir(self) if not attr.startswith('_')]:
+        for attr in [attr for attr in dir(self) if not attr.startswith('_') and
+                    not callable(getattr(self, attr))]:
             to_save.update({attr: getattr(self, attr)})
 
-        fname = fname if fname else\
-                "".join([k for k,v in self._current_info.items() if v=="SAVE" ])
-        fnmae += "_%i.pt" % self.iteration
+        fname = fname if fname else "".join([k for k,v in self._current_info.items() if v=="SAVE" ])
+        fname += "_%i.pt" % self.iteration
         to_save.update({
-            'model_state_dict': model._network.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict()
+            'model_state_dict': self._network.state_dict(),
+            'optimizer_state_dict': self._optimizer.state_dict()
         })
-        save_json(os.path.join(folder, fname))
-
+        torch.save(to_save, os.path.join(folder, fname))
 
     def _test(self, loader) -> None:
         """One pass on the test dataset
@@ -209,22 +207,24 @@ class Model(object):
         Args:
             loader (torch.utils.data.DataLoader): A data loader for testing data.
         """
-        for i, (test_data, test_target) in enumerate(loader):
-            test_jump = data.size(0)
-            self._test_data, self._test_target = send_to([test_data, test_target], self.device)
-            self._test_output = self.network(self._test_data)
-            self._test_loss = criterion(self._test_output, self._test_target)
-            self._call_callbacks("test", test_jump)
+        if len(self._test_callbacks) > 0:
+            for i, (test_data, test_target) in enumerate(loader):
+                test_jump = test_data.size(0)
+                self._test_data, self._test_target = send_to([test_data, test_target], self._device)
+                self._test_output = self._network(self._test_data)
+                self._test_loss = self._criterion(self._test_output, self._test_target)
+                self._call_callbacks("test", test_jump)
 
-    def _call_callbacks(self, time: "str"):
+    def _call_callbacks(self, time: "str", jump: int):
         """Calls all reqiured callbacks
 
         Args:
             time (str): "test" or "train"
+            jump (int): number of passed iteration
         """
         for callback in getattr(self, "_%s_callbacks" % time):
-            args = [getattr(self, _) for _ in callbacks.REQUIRED_ARGS]
-            self._store_res(callback.__name__, callbacks.iteration_end(jump, args))
+            args = [getattr(self, _) for _ in callback.REQUIRED_ARGS]
+            self._store_res(callback.__class__.__name__, callback.iteration_end(jump, *args))
 
     def _store_res(self, name: str, res: Sequence):
         """Stores results in self.record if needed, at the iteration address
@@ -240,13 +240,13 @@ class Model(object):
         for res_ in res:
             if res_:
                 try:
-                    self.record[name][iterations] = res_
+                    self.record[name][str(self.iteration)] = res_
 
                 except KeyError:
                     self.record[name] = {}
-                    self.record[name][iterations] = res_
+                    self.record[name][str(self.iteration)] = res_
 
-            self._current_info.update({name: res_})
+                self._current_info.update({name: res_})
 
 
     def _initialize_weights_and_optimizer(self, input_shape: Sequence[int]) -> None:
@@ -256,10 +256,10 @@ class Model(object):
         Args:
             input_shape (list, tuple): The input shape of the data.
         """
-        set_seed(self.initialisation_seed)
-        self._network = Network(self.layers, self.device, input_shape) 
+        set_seed(self.initialization_seed)
+        self._network = Network(self.layers, self._device, input_shape) 
         self._optimizer = getattr(torch.optim, self.optimizer_name)(
-            self.network.parameters(),
+            self._network.parameters(),
             **self.optimizer_kwargs
         )
 
@@ -269,16 +269,21 @@ class Model(object):
         Args:
             callbacks: Optional[list[Union[str, _callback._CallBack]]]
         """
-        if callback:
+        if callbacks:
             self._test_callbacks = [callback for callback in callbacks if callback.CALL_AT=="test"] 
             self._train_callbacks = [callback for callback in callbacks if callback.CALL_AT=="train"] 
+        
+        else:
+            self._test_callbacks, self._train_callbacks = [], []
 
-    def _initialize_pbar(self, epoch: int, epochs: int) -> tqdm:
+
+    def _initialize_pbar(self, epoch: int, epochs: int, its_per_epochs: int) -> tqdm:
         """Initializes a progress bar for the current epoch
 
         Args:
             epoch (int): current epoch
             epochs (int): total number of epochs.
+            its_per_epochs (int)
 
         Returns:
             the progess bar (tqdm.tqdm)
@@ -286,6 +291,7 @@ class Model(object):
         return tqdm(total=its_per_epochs, unit_scale=True,
                     desc="Epoch %i/%i" % (epoch+1, epochs),
                     postfix={})
+
 
     def _check_terminate(self) -> bool:
         """Cheks if a KILL order as been given
@@ -318,6 +324,25 @@ class Model(object):
             (bool)
         """
         return self.iteration // freq > (self.iteration-jump) // freq 
+
+    # TODO @Simon: When should @satticmethod be specified ?
+    @staticmethod
+    def _get_size_and_its_per_epochs(loader: torch.utils.data.DataLoader)\
+            -> Tuple[Tuple[int], int]:
+        """Returns batch_size and number of iterations per epochs
+
+        Args:
+            loader (torch.utils.data.DataLoader)
+
+        Returns:
+            batchsize (tuple)
+            its_per_epochs (int)
+        """
+        for i, (data, target) in enumerate(loader):
+            size = tuple(data.size())
+            break
+
+        return size, len(loader.dataset)
 
 
 

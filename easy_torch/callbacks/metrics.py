@@ -6,6 +6,7 @@ from ._callback import _CallBack
 
 
 # TODO: Add multiclass, weighted metrics
+# TODO: Redifine its_per_epoch in testify()
 
 class _MetricCallBack(_CallBack):
     """A callback specially designed for metrics monitoring
@@ -30,7 +31,7 @@ class _MetricCallBack(_CallBack):
     """
     CALL_AT = "train"
     REQUIRED_ARGS = []
-    def __init__(self, return_rule: List[int, str], 
+    def __init__(self, return_rule: List[Union[int, str]], 
                  *args, **kwargs) -> None:
         """Initialises the Metric
 
@@ -39,7 +40,7 @@ class _MetricCallBack(_CallBack):
                 frequency. If str as to be in ["iteration_end", "epoch_end"].
             *args, **kwargs: see Callback.__init__
         """
-        super(_MetricCallack, self).__init__(*args, **kwargs)
+        super(_MetricCallBack, self).__init__(*args, **kwargs)
         self._metric = 0
         self._count = 0
         self._iteration = 0
@@ -74,7 +75,7 @@ class _MetricCallBack(_CallBack):
         Returns:
             metric (float)
         """
-        to_return = self.metric/self._count
+        to_return = self._metric/self._count
         self._metric = 0
         self._count = 0
 
@@ -126,7 +127,6 @@ class _MetricCallBack(_CallBack):
 
         return TestClass
 
-
 class Acc(_MetricCallBack):
     """Callbacks that returns accuracy averaged over periodes of iterations
     """
@@ -141,7 +141,7 @@ class Acc(_MetricCallBack):
             target (torch.IntTensor): Ground truth, in the format (N).
         """
         pred = output.argmax(dim=1, keepdim=True)
-        self.metric += pred.eq(target.view_as(pred)).sum().item()
+        self._metric += pred.eq(target.view_as(pred)).sum().item()
 
 TestAcc = Acc.testify()
 
@@ -158,7 +158,7 @@ class Loss(_MetricCallBack):
         # TODO Check if it makes more sens to average the loss inside this
         # function. Mainly check what is traditionally returned by pytorch
         # losses
-        self.metric += loss
+        self._metric += loss
 
 TestLoss = Loss.testify()
 

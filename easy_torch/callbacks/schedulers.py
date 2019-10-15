@@ -77,10 +77,9 @@ class StepDecay(_Scheduler):
             jump (str): The number of iteration performed since last call to
                 action.
         """
-        if event == "epoch_end":
-            if self._epoch in self.steps:
-                self._modif_optimizer('lr', decay=self._rate)
-                self.updated = True
+        if event == "epoch_end" and self._epoch in self.steps:
+            self._modif_optimizer('lr', decay=self._rate)
+            self.updated = True
     
 class TriangularSchedule(_Scheduler):
     def __init__(self, half_cycle, lr_bounds: [float],
@@ -107,12 +106,10 @@ class TriangularSchedule(_Scheduler):
             momentum_increment=self._get_increment(jump, "momentum")
             self._modif_optimizer('momentum', increment=momentum_increment)
 
-        if event == "epoch":
+        elif event == "epoch":
             if self._epoch // self._half_cycle != self._current_half_cycle:
                 self._current_half_cycle += 1
                 self._slope_sign = -self._slope_sign
-
-        return None
 
     def _get_increment(self, jump, param):
         return getattr(self, "_%s_slope" % param)*self._slope_sign*self._iteration*jump

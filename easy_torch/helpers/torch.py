@@ -14,7 +14,7 @@ def get_device(device: Union[str, torch.device]) -> torch.device:
         device "torch.device"
     """
     if isinstance(device, torch.device):
-        return torch.device
+        return device
 
     if device == "auto":
         return torch.device("gpu") if torch.cuda.is_available() else torch.device("cpu")
@@ -43,4 +43,4 @@ def send_to(tensors: List[torch.tensor], device: torch.device) -> List[torch.ten
     return:
         tensors to device (list)
     """
-    return [tesnor.to(device) for tensor in tensors]
+    return [tensor.to(device) for tensor in tensors]

@@ -108,9 +108,9 @@ class LayerBuilder(object):
         Returns:
             None
         """
-        dict_keys = ['type', 'kernel_size', 'activation']
         name_until_options = name.split('-')[:3]
         name_after_options = name.split('-')[3:]
+        dict_keys = ['type', 'kernel_size', 'activation'][:len(name_until_options)]
         self.parsed_name = {k: name_until_options[i] for i, k in enumerate(dict_keys)}
         self.parsed_name['kernel_size'] = [int(v) for v in self.parsed_name['kernel_size'].split('x')]
         self.parsed_name.update({'options': [v for v in name_after_options]})
