@@ -4,7 +4,7 @@ from typing import List, Union
 import torch
 import numpy as np
 
-def get_device(self, device: Union[str, torch.device]) -> torch.device:
+def get_device(device: Union[str, torch.device]) -> torch.device:
     """Returns the asked torch.device
 
     Args:

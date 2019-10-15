@@ -143,7 +143,11 @@ class Model(object):
             callbacks (list): A list of callbacks to apply, already
                 instanciated.
         """
-        self._initialize_weights_and_optimizer(train_loader_SHAPE) # TODO train_loader_SHAPE
+        for i, (data, target) in enumerate(train_loader):
+            size = tuple(data.size)
+            break
+
+        self._initialize_weights_and_optimizer(size) # TODO train_loader_SHAPE
         self._initialize_callbacks(callbacks)
 
         for epoch in epochs:
