@@ -2,7 +2,7 @@ from typing import List, Optional, Union, Sequence
 
 import os
 from copy import copy
-import warning
+import warnings
 
 import torch 
 import torch.nn as nn
@@ -70,7 +70,7 @@ class Model(object):
         # TODO @Simon: Properly manage warnings ? 
         if seed and self.device == torch.device("cuda"):
             if not torch.backends.cudnn.deterministic or torch.backends.cudnn.benchmark:
-                warning.warn(
+                warnings.warn(
                     """
                     You specified a seed but don't meet the conditions for
                     reproducibility when using the CDNN backend of pytorch. You
@@ -124,7 +124,7 @@ class Model(object):
               log_freq: Optional[int]=None, 
               test_loader: Optional[torch.utils.data.DataLoader]=None, 
               test_freq: Optional[int]=None,
-              callbacks: Optional[list[Union[str, _callback._CallBack]]]=None) -> None:
+              callbacks: Optional[List[Union[str, _callback._CallBack]]]=None) -> None:
         # TODO: Find a way to pass strings callbacks and initializes them
         # automatically, in a User friendly way. For now you need to init them
         # before calling train.
@@ -259,7 +259,7 @@ class Model(object):
             **self.optimizer_kwargs
         )
 
-    def _initialize_callbacks(self, callbacks: Optional[List[_CallBack]]=None) -> None:
+    def _initialize_callbacks(self, callbacks: Optional[List[_callback._CallBack]]=None) -> None:
         """Build all the required callbacks
 
         Args:

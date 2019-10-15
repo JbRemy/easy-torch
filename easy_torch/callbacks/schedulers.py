@@ -1,12 +1,14 @@
 
 from typing import List, Optional, Union
 
-from ._callback import _CallBack
+import torch
 from torch import nn
+
+from ._callback import _CallBack
 
 # TODO: Documentation
 
-class _Scheduler(_Callback):
+class _Scheduler(_CallBack):
     """A super class of schedulers for optimizer hyperparameters.
 
     constants:
@@ -15,7 +17,7 @@ class _Scheduler(_Callback):
 
     """
     CALL_AT = "train"
-    def __init__(self, optimizer: nn.optim.optimizer, 
+    def __init__(self, optimizer: torch.optim.Optimizer, 
                  *args, **kwargs) -> None:
         """Initializes the scheduler
 
@@ -26,7 +28,7 @@ class _Scheduler(_Callback):
         super(_Scheduler, self).__init__(*args, **kwargs)
         self._optimizer = optimizer
 
-    def _modif_optimizer(self, key: str, increment: Optinal[float]=None,
+    def _modif_optimizer(self, key: str, increment: Optional[float]=None,
                          decay: Optional[float]=None) -> None:
         """Updates the optimizer hyperparamters with respect to the provided
         values.

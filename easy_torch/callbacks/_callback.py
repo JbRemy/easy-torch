@@ -1,5 +1,5 @@
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 import torch
 
 class _CallBack(object):

@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Union
 
 import torch
 import numpy as np
@@ -22,7 +22,7 @@ def get_device(self, device: Union[str, torch.device]) -> torch.device:
     else:
         return torch.device(device)
 
-def _set_seed(seed: int) -> None:
+def set_seed(seed: int) -> None:
         """Sets the seed for torch, cuda, and numpy.
         Args:
             seed (int): The seed
