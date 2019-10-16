@@ -34,11 +34,11 @@ test_loader = DataLoader(
 epochs = 10
 log_folder = "./lenet_results"
 log_freq = 20000
-test_freq = 20000
+test_freq = 60000
 
 callbacks = [
-    Acc("epoch_end", 50000),
-    TestAcc(1000)
+    Acc("epoch_end", 60000),
+    TestAcc(10000)
 ]
 
 # Definition and training of the network
