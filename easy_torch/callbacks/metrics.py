@@ -6,7 +6,6 @@ from ._callback import _CallBack
 
 
 # TODO: Add multiclass, weighted metrics
-# TODO: Redifine its_per_epoch in testify()
 
 class _MetricCallBack(_CallBack):
     """A callback specially designed for metrics monitoring
@@ -117,10 +116,9 @@ class _MetricCallBack(_CallBack):
             see: %(class_name)s
             """ 
             def __init__(self, *args, **kwargs):
-                super(TestClass).__init__(*args, **kwargs)
-                self._return_rule = "epoch_end"
+                super().__init__("epoch_end", *args, **kwargs)
 
-        TestClass.REQUIRED_ARGS = ["_test_%s" % _ for _ in cls.REQUIRED_ARGS]
+        TestClass.REQUIRED_ARGS = ["_test%s" % _ for _ in cls.REQUIRED_ARGS]
         TestClass.CALL_AT = "test"
         TestClass.__name__ = "Test%s" % cls.__name__
         TestClass.__doc__ %= {"class_name": cls.__name__}

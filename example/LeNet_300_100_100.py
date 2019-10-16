@@ -1,10 +1,12 @@
+import sys
+sys.path.append("../")
 
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import torch.nn as nn
 
 from easy_torch.model import Model
-from easy_torch.callbacks.metrics import Acc
+from easy_torch.callbacks.metrics import Acc, TestAcc
 
 # Definition initialisation parameters of the network
 layers = ["Linear-300", "Linear-100", "Linear-10"]
@@ -35,7 +37,8 @@ log_freq = 20000
 test_freq = 20000
 
 callbacks = [
-    Acc("epoch_end", 50000)
+    Acc("epoch_end", 50000),
+    TestAcc(1000)
 ]
 
 # Definition and training of the network
