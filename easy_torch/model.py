@@ -168,16 +168,18 @@ class Model(object):
                 _pbar.set_postfix(self._current_info)
 
                 if self._check_save() or self._check_crossed(log_freq, jump):
-                    self.save(log_folder)
+                    self.save_model(log_folder)
 
                 if self._check_terminate():
                     return None # TODO @Simon: Is this the correct way to kill the function ?
 
                 self.iteration += jump
 
-    def save(self, folder: Optional[str]=None, 
+        self.save_record(log_folder)
+
+    def save_model(self, folder: Optional[str]=None, 
              fname: Optional[str]=None) -> None:
-        """Saves the model with the record.
+        """Saves the model 
 
         This saves all public attributes + the dict and optimizer state dicts.
         This allows to reload the model when needed.
@@ -190,7 +192,7 @@ class Model(object):
         exists_or_create_dir(folder)
         to_save = {}
         for attr in [attr for attr in dir(self) if not attr.startswith('_') and
-                    not callable(getattr(self, attr))]:
+                    not callable(getattr(self, attr)) and not attr == "record"]:
             to_save.update({attr: getattr(self, attr)})
 
         fname = fname if fname else "".join([k for k,v in self._current_info.items() if v=="SAVE" ])
@@ -200,6 +202,17 @@ class Model(object):
             'optimizer_state_dict': self._optimizer.state_dict()
         })
         torch.save(to_save, os.path.join(folder, fname))
+
+    def save_record(self, folder: Optional[str]=None, 
+             fname: str="record") -> None:
+        """Saves the record 
+
+        Args:
+            folder (str): The directory where to save
+            fname (str): The prefix for every file inside the folder.
+                If None fname is the callback that triggered the SAVE order.
+        """
+        save_json(self.record, os.path.join(folder, fname))
 
     def _test(self, loader) -> None:
         """One pass on the test dataset
