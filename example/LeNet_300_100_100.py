@@ -4,9 +4,10 @@ from torchvision import datasets, transforms
 import torch.nn as nn
 
 from easy_torch.model import Model
+from easy_torch.callbacks.metrics import Acc
 
 # Definition initialisation parameters of the network
-layers = ["Linear-300", "Linear-100", "Linear-100"]
+layers = ["Linear-300", "Linear-100", "Linear-10"]
 device = "auto"
 seed = 42
 
@@ -27,16 +28,20 @@ test_loader = DataLoader(
                    transform=transforms.ToTensor()),
     batch_size=64, shuffle=False
 )
+
 epochs = 10
 log_folder = "./lenet_results"
-log_freq = 1000
-test_freq = 1000
-callbacks = []
+log_freq = 20000
+test_freq = 20000
+
+callbacks = [
+    Acc("epoch_end", 50000)
+]
 
 # Definition and training of the network
 lenet = Model(layers, device, seed)
 lenet.compile(optimizer, criterion, optimizer_kwargs, criterion_kwargs)
-lenet.train(train_loader, epochs, log_folder, test_loader, test_freq,
+lenet.train(train_loader, epochs, log_folder, log_freq, test_loader, test_freq,
             callbacks) 
 
 
