@@ -26,7 +26,9 @@ class Model(object):
     model.
     
     Attributes:
+        model (torch.model): A pytorch model.
         layers (list): A list of layers following the correct syntax.
+                       If model is not None, layers is ommited.
         device (torch.device)
         criterion (str)
         optimizer_name (str)
@@ -43,7 +45,7 @@ class Model(object):
             Defines the training aspects of the model.
 
     """
-    def __init__(self, layers: List[str], device: str="auto", 
+    def __init__(self, model=None, layers=None, device: str="auto", 
                  seed: Optional[int]=None) -> None:
         """Defines architectural parameters of the network.
 
@@ -57,7 +59,7 @@ class Model(object):
                 (default: "auto")
             seed (int): The seed for initialisation of the parameters.
         """
-        self.layers = layers
+        self.layers = layers if model is None else None
         self.device = device
         self.initialization_seed = seed if seed else np.random.randint()
         self.criterion = None
@@ -81,6 +83,7 @@ class Model(object):
                     Warning
                 )
 
+        self._network = model
         self._device = get_device(device)
         self._optimizer = None
         self._current_info = {}
@@ -269,8 +272,10 @@ class Model(object):
         Args:
             input_shape (list, tuple): The input shape of the data.
         """
-        set_seed(self.initialization_seed)
-        self._network = Network(self.layers, self._device, input_shape) 
+        if self._network is None:
+            set_seed(self.initialization_seed)
+            self._network = Network(self.layers, self._device, input_shape) 
+
         self._optimizer = getattr(torch.optim, self.optimizer_name)(
             self._network.parameters(),
             **self.optimizer_kwargs
