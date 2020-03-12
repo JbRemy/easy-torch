@@ -59,7 +59,7 @@ class Model(object):
                 (default: "auto")
             seed (int): The seed for initialisation of the parameters.
         """
-        self.layers = layers if not model is None else None
+        self.layers = layers if model is None else None
         self.device = device
         self.initialization_seed = seed if seed else np.random.randint()
         self.criterion = None
@@ -149,9 +149,7 @@ class Model(object):
         """
         size, its_per_epochs = self._get_size_and_its_per_epochs(train_loader)
 
-        if self._network is None:
-            self._initialize_weights_and_optimizer(size) # TODO train_loader_SHAPE
-
+        self._initialize_weights_and_optimizer(size) # TODO train_loader_SHAPE
         self._initialize_callbacks(callbacks)
 
         for epoch in range(epochs):
@@ -274,8 +272,10 @@ class Model(object):
         Args:
             input_shape (list, tuple): The input shape of the data.
         """
-        set_seed(self.initialization_seed)
-        self._network = Network(self.layers, self._device, input_shape) 
+        if self._network is None:
+            set_seed(self.initialization_seed)
+            self._network = Network(self.layers, self._device, input_shape) 
+
         self._optimizer = getattr(torch.optim, self.optimizer_name)(
             self._network.parameters(),
             **self.optimizer_kwargs
