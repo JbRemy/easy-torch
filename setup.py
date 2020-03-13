@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='easy-torch',  
+    name='easytorch',  
     version='0.11',
     author="Jean-Baptiste Remy",
     author_email="remyjeanb@gmail.com",
