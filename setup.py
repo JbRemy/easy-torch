@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='easy-torch',  
-    version='0.1',
+    version='0.11',
     author="Jean-Baptiste Remy",
     author_email="remyjeanb@gmail.com",
     description="A package for easy prototyping and management of Pytorch models",
