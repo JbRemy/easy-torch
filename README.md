@@ -12,5 +12,9 @@ conda create -n ENV_NAME python=3.7
 conda activate ENV_NAME
 pip install -r requirements.txt
 ```
-Then follow the instructions to install ```pytorch``` depending on your setup at: [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
+
+Then you can install the package current `TestPyPI` release:
+```
+pip install -i https://test.pypi.org/simple/ easytorch
+```
 
